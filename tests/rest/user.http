@@ -1,0 +1,187 @@
+###
+### Retrieve all users (Public) T8
+###
+GET http://localhost:3000/users
+Accept: application/json
+
+> {%
+    client.test("Users retrieved successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Retrieve a user by ID (Alice) T9
+###
+GET http://localhost:3000/users/1
+Accept: application/json
+
+> {%
+    client.test("User Alice retrieved successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Retrieve a user that does not exist T10
+###
+GET http://localhost:3000/users/9999
+Accept: application/json
+
+> {%
+    client.test("Retrieving non-existent user returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.error === "User not found", "Error message is not as expected");
+    });
+%}
+
+###
+### Update User (Alice, Admin user) T11
+###
+PUT http://localhost:3000/users/1
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson Updated"
+}
+
+> {%
+    client.test("User Alice updated successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Update a user that does not exist T12
+###
+PUT http://localhost:3000/users/9999
+Content-Type: application/json
+
+{
+  "name": "Non-existent User"
+}
+
+> {%
+    client.test("Updating non-existent user returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.error === "User not found", "Error message is not as expected");
+    });
+%}
+
+###
+### Delete User (Bob) T13
+###
+DELETE http://localhost:3000/users/2
+
+> {%
+    client.test("User Bob deleted successfully", function() {
+        client.assert(response.status === 204, "Response status is not 204");
+    });
+%}
+
+###
+### Bad Weather Test: Delete a user that does not exist T14
+###
+DELETE http://localhost:3000/users/9999
+
+> {%
+    client.test("Deleting non-existent user returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.error === "User not found", "Error message is not as expected");
+    });
+%}
+
+###
+### Create a new user (Valid case) T15
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Charlie",
+  "email": "charlie@gmail.com",
+  "password": "CharliePassword123",
+  "isAdmin": false
+}
+
+> {%
+    client.test("User Charlie created successfully", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
+%}
+
+###
+### Bad Weather Test: Create a user with invalid email format T16
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Charlie",
+  "email": "charlie_at_gmail.com",
+  "password": "CharliePassword123",
+  "isAdmin": false
+}
+
+> {%
+    client.test("Creating user with invalid email returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Invalid email format", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Create a user with missing name T17
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "email": "charlie@gmail.com",
+  "password": "CharliePassword123",
+  "isAdmin": false
+}
+
+> {%
+    client.test("Creating user without name returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Name, email, and password must be valid strings", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Create a user with non-string isAdmin field T18
+###
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+  "name": "Charlie",
+  "email": "charlie@gmail.com",
+  "password": "CharliePassword123",
+  "isAdmin": "yes"
+}
+
+> {%
+    client.test("Creating user with non-boolean isAdmin returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "isAdmin must be a boolean", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Update user with invalid email format T19
+###
+PUT http://localhost:3000/users/1
+Content-Type: application/json
+
+{
+  "email": "alice_at_gmail.com"
+}
+
+> {%
+    client.test("Updating user with invalid email returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Email must be a valid email address", "Error message is not as expected");
+    });
+%}

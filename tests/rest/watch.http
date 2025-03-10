@@ -1,0 +1,293 @@
+###
+### Login as Alice (Admin User) and store token
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "email": "alice@gmail.com",
+  "password": "AlicePassword123"
+}
+
+> {%
+    client.global.set("adminToken", response.body.token);
+    client.test("Admin login successful, token stored", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token !== undefined, "Token is not present in the response");
+    });
+%}
+
+###
+### Login as Bob (Non-Admin User) and store token
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "email": "bob@gmail.com",
+  "password": "BobPassword456"
+}
+
+> {%
+    client.global.set("userToken", response.body.token);
+    client.test("User login successful, token stored", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token !== undefined, "Token is not present in the response");
+    });
+%}
+
+###
+### Retrieve all watches (Public) T20
+###
+GET http://localhost:3000/watches
+Accept: application/json
+
+> {%
+    client.test("Watches retrieved successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Retrieve a specific watch by ID (Rolex Submariner) T21
+###
+GET http://localhost:3000/watches/1
+Accept: application/json
+
+> {%
+    client.test("Watch Rolex Submariner retrieved successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Retrieve a non-existent watch by ID T22
+###
+GET http://localhost:3000/watches/9999
+Accept: application/json
+
+> {%
+    client.test("Retrieving non-existent watch returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.error === "Watch not found", "Error message is not as expected");
+    });
+%}
+
+###
+### Good Weather Test: Filter watches by brand (Rolex) T23
+###
+GET http://localhost:3000/watches?brand=Rolex
+Accept: application/json
+
+> {%
+    client.test("Watches filtered by brand Rolex successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Good Weather Test: Filter watches by model (Submariner) T24
+###
+GET http://localhost:3000/watches?model=Submariner
+Accept: application/json
+
+> {%
+    client.test("Watches filtered by model Submariner successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Good Weather Test: Filter watches by year of release (2021) T25
+###
+GET http://localhost:3000/watches?yearOfRelease=2021
+Accept: application/json
+
+> {%
+    client.test("Watches filtered by year of release 2021 successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Good Weather Test: Filter watches by price range (minPrice: 5000, maxPrice: 10000) T26
+###
+GET http://localhost:3000/watches?minPrice=5000&maxPrice=10000
+Accept: application/json
+
+> {%
+    client.test("Watches filtered by price range successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Filter watches with invalid price range (minPrice: string) T27
+###
+GET http://localhost:3000/watches?minPrice=abc&maxPrice=10000
+Accept: application/json
+
+> {%
+    client.test("Filtering watches with invalid price returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Price filters must be valid integers", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Filter watches with no matching criteria T28
+###
+GET http://localhost:3000/watches?brand=NonExistentBrand
+Accept: application/json
+
+> {%
+    client.test("Filtering watches with no match returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.message === "No watches found matching the search criteria", "Error message is not as expected");
+    });
+%}
+
+###
+### Create a new watch (Admin only)
+### Using stored admin token for authorization T29
+###
+POST http://localhost:3000/watches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "brand": "Breitling",
+  "model": "Navitimer",
+  "yearOfRelease": 2021,
+  "price": 7000,
+  "endDate": "2024-12-31",
+  "imageUrl": "https://example.com/navitimer.jpg",
+  "imageThumbnails": [
+    "https://example.com/navitimer_thumb1.jpg",
+    "https://example.com/navitimer_thumb2.jpg"
+  ]
+}
+
+> {%
+    client.test("Watch created successfully", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
+%}
+
+###
+### Bad Weather Test: Create a watch with non-string brand name T30
+###
+POST http://localhost:3000/watches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "brand": 123,
+  "model": "Navitimer",
+  "yearOfRelease": 2021,
+  "price": 7000,
+  "endDate": "2024-12-31",
+  "imageUrl": "https://example.com/navitimer.jpg",
+  "imageThumbnails": [
+    "https://example.com/navitimer_thumb1.jpg",
+    "https://example.com/navitimer_thumb2.jpg"
+  ]
+}
+
+> {%
+    client.test("Creating watch with non-string brand returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Brand, model, endDate, and imageUrl must be valid strings", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Create a watch with string price instead of number T31
+###
+POST http://localhost:3000/watches
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "brand": "Breitling",
+  "model": "Navitimer",
+  "yearOfRelease": 2021,
+  "price": "seven thousand",
+  "endDate": "2024-12-31",
+  "imageUrl": "https://example.com/navitimer.jpg",
+  "imageThumbnails": [
+    "https://example.com/navitimer_thumb1.jpg",
+    "https://example.com/navitimer_thumb2.jpg"
+  ]
+}
+
+> {%
+    client.test("Creating watch with string price returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Price must be a valid number greater than zero", "Error message is not as expected");
+    });
+%}
+
+###
+### Update a specific watch (Admin only)
+### Using stored admin token for authorization T32
+###
+PUT http://localhost:3000/watches/1
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "price": 8500
+}
+
+> {%
+    client.test("Watch updated successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Update a watch with non-string model name T33
+###
+PUT http://localhost:3000/watches/1
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "model": 12345
+}
+
+> {%
+    client.test("Updating watch with non-string model returns 400", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Model must be a valid string", "Error message is not as expected");
+    });
+%}
+
+###
+### Delete a specific watch (Admin only) T34
+### Using stored admin token for authorization
+###
+DELETE http://localhost:3000/watches/3
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("Watch Tag Heuer Carrera deleted successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Delete a non-existent watch T35
+###
+DELETE http://localhost:3000/watches/9999
+Accept: application/json
+Authorization: Bearer {{adminToken}}
+
+> {%
+    client.test("Deleting non-existent watch returns 404", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.error === "Watch not found", "Error message is not as expected");
+    });
+%}

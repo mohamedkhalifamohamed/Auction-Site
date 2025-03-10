@@ -1,0 +1,133 @@
+###
+### Login as Alice (Admin user) T1
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alice@gmail.com",
+  "password": "AlicePassword123"
+}
+
+> {%
+    client.global.set("token", response.body.token);
+    client.global.set("adminToken", response.body.token);
+    client.test("Admin login successful, token retrieved", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token !== undefined, "Token is not present in the response");
+    });
+%}
+
+###
+### Login as Bob (Non-admin user) T2
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "bob@gmail.com",
+  "password": "BobPassword456"
+}
+
+> {%
+    client.global.set("userToken", response.body.token);
+    client.test("User login successful, token retrieved", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token !== undefined, "Token is not present in the response");
+    });
+%}
+
+###
+### Bad Weather Test: Incorrect password for Alice T3
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alice@gmail.com",
+  "password": "WrongPassword123"
+}
+
+> {%
+    client.test("Login failed due to incorrect password", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.message === "Invalid email or password", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Invalid email format T4
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alicegmail.com",
+  "password": "AlicePassword123"
+}
+
+> {%
+    client.test("Login failed due to invalid email format", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.message === "Invalid email or password", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Non-existent user T5
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "nonexistentuser@gmail.com",
+  "password": "SomePassword"
+}
+
+> {%
+    client.test("Login failed due to non-existent user", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.message === "Invalid email or password", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Missing email field T6
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "AlicePassword123"
+}
+
+> {%
+    client.test("Login failed due to missing email", function() {
+        client.assert(response.status === 400, "Response status is not 401");
+        client.assert(response.body.message === "Email and password are required", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Missing password field T7
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "alice@gmail.com"
+}
+
+> {%
+    client.test("Login failed due to missing password", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Email and password are required", "Error message is not as expected");
+    });
+%}

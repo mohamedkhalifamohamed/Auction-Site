@@ -1,0 +1,180 @@
+###
+### Login as Alice (Admin User) and store token
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "email": "alice@gmail.com",
+  "password": "AlicePassword123"
+}
+
+> {%
+    client.global.set("adminToken", response.body.token);
+    client.test("Admin login successful, token stored", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token !== undefined, "Token is not present in the response");
+    });
+%}
+
+###
+### Login as Bob (Non-Admin User) and store token
+###
+POST http://localhost:3000/users/login
+Content-Type: application/json
+
+{
+  "email": "bob@gmail.com",
+  "password": "BobPassword456"
+}
+
+> {%
+    client.global.set("userToken", response.body.token);
+    client.test("User login successful, token stored", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.assert(response.body.token !== undefined, "Token is not present in the response");
+    });
+%}
+
+###
+### Retrieve all bids for a specific watch (Rolex Submariner) T36
+###
+GET http://localhost:3000/watches/1/bids
+Accept: application/json
+
+> {%
+    client.test("Bids for Rolex Submariner retrieved successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Retrieve all bids for a specific user (Alice) T37
+###
+GET http://localhost:3000/users/1/bids
+Accept: application/json
+
+> {%
+    client.test("Bids for user Alice retrieved successfully", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+###
+### Bad Weather Test: Retrieve bids for a non-existent watch T38
+### Testing when trying to get bids for a watch that does not exist.
+###
+GET http://localhost:3000/watches/9999/bids
+Accept: application/json
+
+> {%
+    client.test("Retrieve bids failed for non-existent watch", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.message === "No bids found for this watch", "Error message is not as expected");
+    });
+%}
+
+###
+### Bad Weather Test: Retrieve bids for a non-existent user T39
+### Testing when trying to get bids for a user that does not exist.
+###
+GET http://localhost:3000/users/9999/bids
+Accept: application/json
+
+> {%
+    client.test("Retrieve bids failed for non-existent user", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+        client.assert(response.body.message === "No bids found for this user", "Error message is not as expected");
+    });
+%}
+
+###
+### Create a new bid for a specific watch (Omega Seamaster - Requires authentication) T40
+### Using stored user (non-admin) token for authorization
+###
+POST http://localhost:3000/watches/2/bids
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "amount": 7000
+}
+
+> {%
+    client.test("Bid created successfully for Omega Seamaster", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
+%}
+
+###
+### Create a new bid for a specific watch (Omega Seamaster - Requires authentication) which has a lower price than the original price of the watch
+### Using stored user (non-admin) token for authorization T41
+###
+POST http://localhost:3000/watches/2/bids
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "amount": 10
+}
+
+> {%
+    client.test("Bid creation failed due to low bid amount", function() {
+        client.assert(response.status === 400, "Response status is not 400");
+        client.assert(response.body.message === "Bid amount must be at least the original price of 6000", "Error message is not as expected");
+    });
+%}
+
+###
+### Create a new bid for a specific watch (Omega Seamaster - Requires authentication) T42
+### Using stored admin token for authorization
+###
+POST http://localhost:3000/watches/2/bids
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "amount": 7000
+}
+
+> {%
+    client.test("Bid created successfully for Omega Seamaster", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+    });
+%}
+
+###
+### Bad Weather Test: Create a bid without authentication T43
+### This should fail as no Authorization header is provided.
+###
+POST http://localhost:3000/watches/2/bids
+Content-Type: application/json
+
+{
+  "amount": 4000
+}
+
+> {%
+    client.test("Bid creation failed due to missing authentication", function() {
+        client.assert(response.status === 401, "Response status is not 401");
+        client.assert(response.body.message === "Authentication required", "Error message is not as expected");
+    });
+%}
+
+###
+### DELETE a bid for a specific watch (Omega Seamaster - Requires authentication) T44
+### Using stored admin token for authorization
+###
+DELETE http://localhost:3000/watches/2/bids
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "amount": 7000
+}
+
+> {%
+    client.test("Created Bid cannot be deleted", function() {
+        client.assert(response.status === 404, "Response status is not 404");
+    });
+%}
