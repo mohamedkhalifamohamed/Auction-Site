@@ -31,7 +31,7 @@
         window.location.reload();  // Refresh the page after logging out
     };
 
-    export let title = "Welcome to the Auction!";
+    export let title = "Welcome to the Auction!";  // Default title
 </script>
 
 <header class="header">

@@ -27,8 +27,8 @@
   });
 
   page('/watches/:watchID', (ctx) => {
-      currentPage = WatchDetailsPage;
-      currentParams = {watchID: ctx.params.watchID};
+    currentPage = WatchDetailsPage;
+    currentParams = { watchID: ctx.params.watchID };
   });
 
   page('/login', () => {
